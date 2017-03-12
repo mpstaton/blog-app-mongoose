@@ -21,29 +21,34 @@ function seedBlogPostData() {
   // this will return a promise
   return BlogPost.insertMany(seedData);
 }
-
+/*
 function generateAuthor() {
 	const authors = ['Mark Twain', 'Aldous Huxley', 'Charles Dickens', 'Daniel Boorstin'];
 	return authors[Math.floor(Math.random() * authors.length)];
 }
-
+*/
 
 function generateBlogPostData() {
   return {
  //need to generate ids
     id: faker.generateId(),
-    author: faker.generateAuthor(),
- //need to generate content
-    content: faker.generateContent(),
- //need to generate titles
-    title: faker.generateTitle(),
+    author: {
+    	firstName: faker.name.firstName(),
+    	lastName: faker.name.lastName()
+    },
+    title: faker.lorem.sentence(),
+    content: faker.lorem.text(),
     created: faker.date.past(),
   }
 }
 
 function tearDownDb() {
+  return new Promise((resolve, reject) => {
     console.warn('Deleting database');
-    return mongoose.connection.dropDatabase();
+    mongoose.connection.dropDatabase()
+      .then(result => resolve(result))
+      .catch(err => reject(err))
+  });
 }
 
 describe('BlogPost API resource', function() {
@@ -73,7 +78,7 @@ describe('BlogPost API resource', function() {
 					return BlogPost.count();
 				})
 				.then(function(count) {
-					res.body.posts.should.have.length.of(count);
+					res.body.should.have.length.of(count);
 				});
 		});
 
@@ -84,22 +89,21 @@ describe('BlogPost API resource', function() {
 				.then(function(res) {
 					res.should.have.status(200);
 					res.should.be.json;
-					res.body.posts.should.be.a('array');
-					res.body.posts.should.have.length.of.at.least(1);
-					res.body.posts.forEach(function(post) {
+					res.body.should.be.a('array');
+					res.body.should.have.length.of.at.least(1);
+
+					res.body.forEach(function(post) {
 						post.should.be.a('object');
 						post.should.include.keys(
 							'id', 'title', 'content', 'author', 'created');
 					});
-					resPost = res.body.posts[0];
-					return Post.findById(resPost.id);
+					resPost = res.body[0];
+					return BlogPost.findById(resPost.id).exec();
 				})
 				.then(function(post) {
-					resPost.id.should.equal(post.id);
-					resPost.author.should.equal(post.author);
+					resPost.author.should.equal(post.authorName);
 					resPost.title.should.equal(post.title);
 					resPost.content.should.equal(post.content);
-					resPost.created.should.equal(post.created);
 				});
 		});
 	});
@@ -119,13 +123,13 @@ describe('BlogPost API resource', function() {
           res.body.should.be.a('object');
           res.body.should.include.keys(
             'id', 'title', 'author', 'content', 'created');
-          res.body.name.should.equal(newPost.name);
           // cause Mongo should have created id on insertion
           res.body.id.should.not.be.null;
           res.body.title.should.equal(newPost.title);
-          res.body.author.should.equal(newPost.author);
+          res.body.author.should.equal(
+          	`${newPost.author.firstName} ${newPost.author.lastName}`);
           res.body.content.should.equal(newPost.content);
-          return Post.findById(res.body.id);
+          return BlogPost.findById(res.body.id);
         })
         .then(function(post) {
           post.author.should.equal(newPost.author);
@@ -142,26 +146,35 @@ describe('BlogPost API resource', function() {
 		it('should update fields you send over', function() {
 			const updateData = {
 				title: 'Updated Blog Post',
-				author: 'Kermit the Updater'
+				author: {
+					firstName: 'Kermit', 
+					lastName: 'the Updater'
+				}
 			};
 
-			return Post
+			return BlogPost
 				.findOne()
 				.exec()
 				.then(function(post) {
 					updateData.id = post.id
 
-					return chai.request.(app)
+					return chai.request(app)
 						.put(`/posts/${post.id}`)
 						.send(updateData);
 				})
 				.then(function(res) {
-					res.should.have.status(204);
-					return Post.findById(updateData.id).exec();
+					res.should.have.status(201);
+					res.should.be.json;
+					res.body.should.be.a('object');
+					res.body.title.should.equal(updateData.title);
+					res.body.author.should.equal(
+          	`${updateData.author.firstName} ${updateData.author.lastName}`);
+					return BlogPost.findById(updateData.id).exec();
 				})
 				.then(function(post) {
 					post.title.should.equal(updateData.title);
-					post.cuisine.should.equal(updateData.author);
+					post.author.firstName.should.equal(updateData.author.firstName);
+					post.author.lastName.should.equal(updateData.author.lastName);
 				});
 		});
 	});
@@ -169,9 +182,10 @@ describe('BlogPost API resource', function() {
 		describe('DELETE endpoint', function() {
 
 		it('should delete a BlogPost by id', function() {
+
 			let post;
 
-			return Post
+			return BlogPost
 				.findOne()
 				.exec()
 				.then(function(_post) {
@@ -180,7 +194,7 @@ describe('BlogPost API resource', function() {
 				})
 				.then(function(res) {
 					res.should.have.status(204);
-					return Post.findById(post.id).exec();
+					return BlogPost.findById(post.id);
 				})
 				.then(function(_post) {
 					should.not.exist(_post);
