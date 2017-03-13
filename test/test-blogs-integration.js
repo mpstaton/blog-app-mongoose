@@ -31,7 +31,6 @@ function generateAuthor() {
 function generateBlogPostData() {
   return {
  //need to generate ids
-    id: faker.generateId(),
     author: {
     	firstName: faker.name.firstName(),
     	lastName: faker.name.lastName()
