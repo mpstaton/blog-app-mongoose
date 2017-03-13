@@ -38,7 +38,7 @@ function generateBlogPostData() {
     },
     title: faker.lorem.sentence(),
     content: faker.lorem.text(),
-    created: faker.date.past(),
+    created: new Date()
   }
 }
 
@@ -132,10 +132,10 @@ describe('BlogPost API resource', function() {
           return BlogPost.findById(res.body.id).exec();
         })
         .then(function(post) {
-          post.author.should.equal(newPost.author);
+          post.author.firstName.should.equal(newPost.author.firstName);
+          post.author.lastName.should.equal(newPost.author.lastName);
           post.title.should.equal(newPost.title);
           post.content.should.equal(newPost.content);
-          post.created.should.equal(newPost.created);
         });
 
 		});
