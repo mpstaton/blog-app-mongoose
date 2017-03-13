@@ -201,6 +201,6 @@ describe('BlogPost API resource', function() {
 				});
 		});
 	});
-};
+});
 
 
