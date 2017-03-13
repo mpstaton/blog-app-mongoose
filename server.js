@@ -8,6 +8,8 @@ const {BlogPost} = require('./models');
 
 const app = express();
 
+mongoose.Promise = require('bluebird');
+
 app.use(morgan('common'));
 app.use(bodyParser.json());
 

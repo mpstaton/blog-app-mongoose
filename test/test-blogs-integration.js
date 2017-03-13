@@ -2,6 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const faker = require('faker');
 const mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
 
 const should = chai.should();
 
@@ -128,7 +129,7 @@ describe('BlogPost API resource', function() {
           res.body.author.should.equal(
           	`${newPost.author.firstName} ${newPost.author.lastName}`);
           res.body.content.should.equal(newPost.content);
-          return BlogPost.findById(res.body.id);
+          return BlogPost.findById(res.body.id).exec();
         })
         .then(function(post) {
           post.author.should.equal(newPost.author);
@@ -193,7 +194,7 @@ describe('BlogPost API resource', function() {
 				})
 				.then(function(res) {
 					res.should.have.status(204);
-					return BlogPost.findById(post.id);
+					return BlogPost.findById(post.id).exec();
 				})
 				.then(function(_post) {
 					should.not.exist(_post);
